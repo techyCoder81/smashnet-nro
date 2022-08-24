@@ -14,6 +14,7 @@ name = "smashnet"
 [dependencies]
 skyline = { git = "https://github.com/ultimate-research/skyline-rs.git" }
 smashnet = { git = "https://github.com/techyCoder81/smashnet.git", features = ["nro"] }
+curl-sys = { git = "https://github.com/techyCoder81/curl-rust.git", branch = "main" }
 
 
 [profile.dev]
