@@ -18,7 +18,7 @@ jobs:
 
     # build the project
     - run: |
-        export PATH=$PATH:/root/.cargo/bin:/opt/devkitpro/devkitA64/bin \
+        export PATH="$PATH:/root/.cargo/bin:/opt/devkitpro/devkitA64/bin" \
         && cargo skyline build --release
 
     - run: |
