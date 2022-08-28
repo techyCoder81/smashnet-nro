@@ -15,7 +15,7 @@ jobs:
 
     # build the project
     - run: |
-        ll && cargo skyline build --release
+        ls && cargo skyline build --release
 
     # upload asset
     - name: Upload plugin to release
