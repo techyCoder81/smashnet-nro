@@ -16,10 +16,8 @@ jobs:
 
     # build the project
     - run: |
-        export PATH=$PATH:/root/.cargo/bin:/opt/devkitpro/devkitA64/bin
-
-    - run: |
-        ls && cargo skyline build --release
+        export PATH=$PATH:/root/.cargo/bin:/opt/devkitpro/devkitA64/bin \
+        && cargo skyline build --release
 
     - run: |
         md5sum target/aarch64-skyline-switch/release/libsmashnet.nro > checksum.txt
