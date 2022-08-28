@@ -8,6 +8,7 @@
 mod curl;
 use curl::*;
 use std::fs;
+use smashnet::HttpCurl;
 
 pub fn is_emulator() -> bool {
     return unsafe { skyline::hooks::getRegionAddress(skyline::hooks::Region::Text) as u64 } == 0x8004000;
