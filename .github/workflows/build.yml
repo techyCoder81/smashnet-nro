@@ -7,7 +7,7 @@ on:
 jobs:
   plugin_build:
     env:
-      PLUGIN_NAME: hdr
+      PLUGIN_NAME: smashnet
     runs-on: ubuntu-latest
     container: 
       image: jugeeya/cargo-skyline:latest
