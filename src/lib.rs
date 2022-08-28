@@ -48,6 +48,7 @@ pub fn main() {
     println!("hash of current install: {}", current_hash);
     
     if current_hash != latest_hash {
+        println!("asking if we want to update smashnet");
         let should_update = skyline_web::Dialog::yes_no("An update is available for smashnet.nro! Would you like to update?");
         if should_update {
             println!("updating smashnet!");
