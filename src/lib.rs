@@ -42,8 +42,14 @@ pub fn main() {
     println!("hash of current install: {:x}", current_hash);
     
     if (current_hash != latest_hash) {
-        Curler::new()..download(
-            "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro", 
-            "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro");
+        let should_update = skyline_web::Dialog::yes_no("An update is available for smashnet.nro! Would you like to update?");
+        if should_update {
+            println!("updating smashnet!");
+            Curler::new().download(
+                "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro", 
+                "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro");
+            } else {
+                println!("not updating smashnet!");
+            }
     }
 }
