@@ -41,4 +41,9 @@ pub fn main() {
     let current_hash = format!("{:x}", digest);
     println!("hash of current install: {:x}", current_hash);
     
+    if (current_hash != latest_hash) {
+        Curler::new()..download(
+            "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro", 
+            "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro");
+    }
 }
