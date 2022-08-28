@@ -19,9 +19,6 @@ jobs:
         export PATH=$PATH:/root/.cargo/bin:/opt/devkitpro/devkitA64/bin
 
     - run: |
-        rustup default nightly    
-    
-    - run: |
         ls && cargo skyline build --release
 
     - run: |
