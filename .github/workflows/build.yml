@@ -1,0 +1,33 @@
+name: build_nightly
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+      image: jugeeya/cargo-skyline:3.0.0-dkp-beta
+    steps:
+    - name: checkout version
+      uses: actions/checkout@v2
+
+    # build the project
+    - run: |
+        ll && cargo skyline build --release
+
+    # upload asset
+    - name: Upload plugin to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        file: 'target/aarch64-skyline-switch/release/libsmashnet.nro'
+        prerelease: true
+        file_glob: true
+        asset_name: plugin
+        release_name: nightly
+        tag: nightly
+        overwrite: true
+        body: Nightly build of smashnet.nro
+    
+

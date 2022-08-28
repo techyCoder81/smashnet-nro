@@ -125,9 +125,9 @@ impl HttpCurl for Curler {
     #[export_name = "HttpCurl__download"]
     extern "Rust" fn download(&mut self, url: String, location: String) -> Result<(), u32>{
         // change thread to high priority
-        unsafe {
-            skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
-        }
+        //unsafe {
+        //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
+        //}
 
         // temp file name: myfile.txt.dl
         let temp_file = [location.as_str(), ".dl"].concat();
@@ -186,9 +186,10 @@ impl HttpCurl for Curler {
         std::fs::rename(&temp_file, location);
 
         println!("resetting priority of thread");
-        unsafe {
-            skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 16);
-        }
+        //unsafe {
+        //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 16);
+        //}
+        println!("download complete.");
         Ok(())
     }
     #[export_name = "HttpCurl__progress_callback"]
