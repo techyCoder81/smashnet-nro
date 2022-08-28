@@ -6,6 +6,8 @@
 #![allow(dead_code)]
 #![feature(c_variadic)]
 mod curl;
+use curl::*;
+use smashnet::*;
 
 pub fn is_emulator() -> bool {
     return unsafe { skyline::hooks::getRegionAddress(skyline::hooks::Region::Text) as u64 } == 0x8004000;
@@ -18,5 +20,8 @@ pub fn main() {
         println!("not checking for updates for smashnet since we are on emulator.");
         return;
     }
-    // check for updates here
+    println!("checking for smashnet updates...");
+    //let result = Curler::new()
+        //.progress_callback(|total, current| session.progress(current/total, &self.id))
+    //    .download("url", location);
 }
