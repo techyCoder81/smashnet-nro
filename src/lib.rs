@@ -21,7 +21,24 @@ pub fn main() {
         return;
     }
     println!("checking for smashnet updates...");
-    //let result = Curler::new()
+    match Curler::new()
         //.progress_callback(|total, current| session.progress(current/total, &self.id))
-    //    .download("url", location);
+        .download("https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/checksum.txt", "sd:/downloads/checksum.txt") {
+            Ok(_) => println!("download was ok!"),
+            Err(e) => println!("Error during download: {}", e)
+    }
+
+    let latest_hash = fs::read_to_string("sd:/downloads/checksum.txt");
+    println!("Hash of latest: {}", latest_hash);
+    
+    // read the file
+    let data = match fs::read("sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro") {
+        Ok(bytes) => bytes,
+        Err(e) => {println!("error during smashnet update!"); return;}
+    };
+    // compute the md5 and return the value
+    let digest = md5::compute(data);
+    let current_hash = format!("{:x}", digest);
+    println!("hash of current install: {:x}", current_hash);
+    
 }
