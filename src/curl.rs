@@ -185,7 +185,7 @@ impl HttpCurl for Curler {
         }
         std::fs::rename(&temp_file, location);
 
-        println!("resetting priority of thread");
+        //println!("resetting priority of thread");
         //unsafe {
         //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 16);
         //}
