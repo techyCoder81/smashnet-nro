@@ -7,7 +7,7 @@
 #![feature(c_variadic)]
 mod curl;
 use curl::*;
-use smashnet::*;
+use std::fs;
 
 pub fn is_emulator() -> bool {
     return unsafe { skyline::hooks::getRegionAddress(skyline::hooks::Region::Text) as u64 } == 0x8004000;
@@ -21,7 +21,7 @@ pub fn main() {
         return;
     }
     println!("checking for smashnet updates...");
-    match Curler::new()
+    match smashnet::Curler::new()
         //.progress_callback(|total, current| session.progress(current/total, &self.id))
         .download("https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/checksum.txt", "sd:/downloads/checksum.txt") {
             Ok(_) => println!("download was ok!"),
@@ -39,7 +39,7 @@ pub fn main() {
     // compute the md5 and return the value
     let digest = md5::compute(data);
     let current_hash = format!("{:x}", digest);
-    println!("hash of current install: {:x}", current_hash);
+    println!("hash of current install: {}", current_hash);
     
     if (current_hash != latest_hash) {
         let should_update = skyline_web::Dialog::yes_no("An update is available for smashnet.nro! Would you like to update?");
