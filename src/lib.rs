@@ -32,7 +32,7 @@ pub fn main() {
     }
 
     let latest_hash = match fs::read_to_string("sd:/downloads/checksum.txt"){
-        Ok(hash) => hash,
+        Ok(hash) => hash.split(" ").next().unwrap(),
         Err(e) => {println!("Error reading downloaded hash file: {}", e); return;}
     };
     println!("Hash of latest: {}", latest_hash);
