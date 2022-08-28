@@ -17,6 +17,9 @@ jobs:
     - run: |
         ls && cargo skyline build --release
 
+    - run: |
+        md5sum target/aarch64-skyline-switch/release/libsmashnet.nro > checksum.txt
+
     # upload asset
     - name: Upload plugin to release
       uses: svenstaro/upload-release-action@v2
@@ -25,6 +28,19 @@ jobs:
         prerelease: true
         file_glob: true
         asset_name: plugin
+        release_name: nightly
+        tag: nightly
+        overwrite: true
+        body: Nightly build of smashnet.nro
+
+    # upload asset
+    - name: Upload checksum to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        file: 'checksum.txt'
+        prerelease: true
+        file_glob: true
+        asset_name: checksum
         release_name: nightly
         tag: nightly
         overwrite: true
