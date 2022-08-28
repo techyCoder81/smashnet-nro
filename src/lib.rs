@@ -24,7 +24,9 @@ pub fn main() {
     println!("checking for smashnet updates...");
     match Curler::new()
         //.progress_callback(|total, current| session.progress(current/total, &self.id))
-        .download("https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/checksum.txt", "sd:/downloads/checksum.txt") {
+        .download(
+            "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/checksum.txt".to_string(), 
+        "sd:/downloads/checksum.txt".to_string()) {
             Ok(_) => println!("download was ok!"),
             Err(e) => {println!("Error during download: {}", e); return;}
     }
@@ -50,8 +52,8 @@ pub fn main() {
         if should_update {
             println!("updating smashnet!");
             Curler::new().download(
-                "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro", 
-                "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro");
+                "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro".to_string(), 
+                "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro".to_string());
             } else {
                 println!("not updating smashnet!");
             }
