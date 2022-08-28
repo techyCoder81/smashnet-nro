@@ -21,14 +21,17 @@ pub fn main() {
         return;
     }
     println!("checking for smashnet updates...");
-    match smashnet::Curler::new()
+    match Curler::new()
         //.progress_callback(|total, current| session.progress(current/total, &self.id))
         .download("https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/checksum.txt", "sd:/downloads/checksum.txt") {
             Ok(_) => println!("download was ok!"),
-            Err(e) => println!("Error during download: {}", e)
+            Err(e) => {println!("Error during download: {}", e); return;}
     }
 
-    let latest_hash = fs::read_to_string("sd:/downloads/checksum.txt");
+    let latest_hash = match fs::read_to_string("sd:/downloads/checksum.txt"){
+        Ok(hash) => hash,
+        Err(e) => {println!("Error reading downloaded hash file: {}", e); return;}
+    };
     println!("Hash of latest: {}", latest_hash);
     
     // read the file
@@ -45,7 +48,7 @@ pub fn main() {
         let should_update = skyline_web::Dialog::yes_no("An update is available for smashnet.nro! Would you like to update?");
         if should_update {
             println!("updating smashnet!");
-            smashnet::Curler::new().download(
+            Curler::new().download(
                 "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro", 
                 "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro");
             } else {
