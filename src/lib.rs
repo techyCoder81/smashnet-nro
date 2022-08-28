@@ -31,10 +31,11 @@ pub fn main() {
             Err(e) => {println!("Error during download: {}", e); return;}
     }
 
-    let latest_hash = match fs::read_to_string("sd:/downloads/checksum.txt"){
-        Ok(hash) => hash.split(" ").next().unwrap().clone(),
+    let contents = match fs::read_to_string("sd:/downloads/checksum.txt"){
+        Ok(hash) => hash,
         Err(e) => {println!("Error reading downloaded hash file: {}", e); return;}
     };
+    let latest_hash = contents.split(" ").next().unwrap().clone();
     println!("Hash of latest: {}", latest_hash);
     
     // read the file
