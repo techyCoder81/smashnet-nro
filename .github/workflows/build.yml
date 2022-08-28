@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: 
-      image: jugeeya/cargo-skyline:3.0.0-dkp-beta
+      image: jugeeya/cargo-skyline:3.0.0-beta
     steps:
     - name: checkout version
       uses: actions/checkout@v2
