@@ -5,7 +5,9 @@ on:
       - main
 
 jobs:
-  build:
+  plugin_build:
+    env:
+      PLUGIN_NAME: hdr
     runs-on: ubuntu-latest
     container: 
       image: jugeeya/cargo-skyline:latest
