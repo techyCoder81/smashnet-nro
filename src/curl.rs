@@ -145,9 +145,9 @@ impl HttpCurl for Curler {
             let ptr = cstr.as_str().as_ptr();
             let curl = self.curl as *mut CURL;
             println!("curl is initialized, beginning options");
-            let header = slist_append(std::ptr::null_mut(), "Accept: application/octet-stream\0".as_ptr());
+            //let header = slist_append(std::ptr::null_mut(), "Accept: application/octet-stream\0".as_ptr());
             curle!(easy_setopt(curl, curl_sys::CURLOPT_URL, ptr))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_HTTPHEADER, header))?;
+            //curle!(easy_setopt(curl, curl_sys::CURLOPT_HTTPHEADER, header))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_FOLLOWLOCATION, 1u64))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEDATA, &mut writer))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
