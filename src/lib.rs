@@ -67,9 +67,4 @@ pub fn main() {
     } else {
         println!("smashnet is up to date!");
     }
-
-    match Curler::new().get_json("https://api.github.com/repos/HDR-Development/HDR-Nightlies/releases?per_page=10".to_string()) {
-            Ok(str) => println!("get succeeded: {}", str),
-            Err(e) => println!("https GET failed! Error: {}", e)
-        }
 }
