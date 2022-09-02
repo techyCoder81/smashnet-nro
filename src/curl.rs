@@ -132,7 +132,10 @@ impl HttpCurl for Curler {
         let location = format!("sd:/downloads/{}.json", tick);
         match download_common(self, url, location, "application/json".to_string()) {
             Ok(()) => println!("json GET ok!"),
-            Err(e) => {println!("json GET error: {}", e);return Err(e);}
+            Err(e) => {
+                let error = format!("{}", e);
+                return Err(error);
+            }
         }
         let json = match std::fs::read_to_string(location){
             Ok(text) => text,
@@ -152,7 +155,10 @@ impl HttpCurl for Curler {
         let location = format!("sd:/downloads/{}.txt", tick);
         match download_common(self, url, location, "text/plain".to_string()) {
             Ok(()) => println!("text GET ok!"),
-            Err(e) => {println!("text GET error: {}", e);return Err(e);}
+            Err(e) => {
+                let error = format!("{}", e);
+                return Err(error);
+            }
         }
         let str = match std::fs::read_to_string(location){
             Ok(text) => text,
@@ -206,7 +212,7 @@ fn download_common(curler: &mut Curler, url: String, location: String, accept: S
         curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEDATA, &mut writer))?;
         curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
     
-        match self.callback {
+        match curler.callback {
             Some(function) => {
                 curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 0u64))?;
                 curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSDATA, function as *const ()))?;
