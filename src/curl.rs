@@ -147,7 +147,7 @@ impl HttpCurl for Curler {
 
     /// GET text from the given url
     #[export_name = "HttpCurl__get"]
-    extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
+    extern "Rust" fn get(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.txt", tick);
         match self.download_common(url, location, "text/plain".to_string()) {
