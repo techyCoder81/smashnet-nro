@@ -122,7 +122,7 @@ impl HttpCurl for Curler {
     /// download a file from the given url to the given location
     #[export_name = "HttpCurl__download"]
     extern "Rust" fn download(&mut self, url: String, location: String) -> Result<(), u32>{
-        self.download_common(url, location, "application/octet-stream".to_string())
+        download_common(self, url, location, "application/octet-stream".to_string())
     }
 
     /// GET json from the given url
@@ -130,7 +130,7 @@ impl HttpCurl for Curler {
     extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.json", tick);
-        match self.download_common(url, location, "application/json".to_string()) {
+        match download_common(self, url, location, "application/json".to_string()) {
             Ok(()) => println!("json GET ok!"),
             Err(e) => {println!("json GET error: {}", e);return Err(e);}
         }
@@ -150,7 +150,7 @@ impl HttpCurl for Curler {
     extern "Rust" fn get(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.txt", tick);
-        match self.download_common(url, location, "text/plain".to_string()) {
+        match download_common(self, url, location, "text/plain".to_string()) {
             Ok(()) => println!("text GET ok!"),
             Err(e) => {println!("text GET error: {}", e);return Err(e);}
         }
@@ -171,76 +171,78 @@ impl HttpCurl for Curler {
         self
     }
 
-    fn download_common(&mut self, url: String, location: String, accept: String) -> Result<(), u32> {
-        // change thread to high priority
-        //unsafe {
-        //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
-        //}
     
-        // temp file name: myfile.txt.dl
-        let temp_file = [location.as_str(), ".dl"].concat();
-        if Path::new(temp_file.as_str()).exists() {
-            println!("removing existing temp file: {}", temp_file);
-            std::fs::remove_file(&temp_file);
-        }
-    
-        println!("creating temp file: {}", temp_file);
-        let mut writer = std::io::BufWriter::with_capacity(
-            0x40_0000,
-            std::fs::File::create(&temp_file).unwrap()
-        );
-        println!("created bufwriter with capacity");
-        unsafe {
-            let cstr = [url.as_str(), "\0"].concat();
-            let ptr = cstr.as_str().as_ptr();
-            let curl = self.curl as *mut CURL;
-            println!("curl is initialized, beginning options");
-            let header_text = format!("Accept: application/{}\0", accept).as_ptr();
-            let header = slist_append(std::ptr::null_mut(), header_text);
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_URL, ptr))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_HTTPHEADER, header))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_FOLLOWLOCATION, 1u64))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEDATA, &mut writer))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
-        
-            match self.callback {
-                Some(function) => {
-                    curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 0u64))?;
-                    curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSDATA, function as *const ()))?;
-                    curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSFUNCTION, callback_internal as *const ()))?;
-                },
-                None => curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 1u64))?,
-            }
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_NOSIGNAL, 1u64))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_SSL_CTX_FUNCTION, curl_ssl_ctx_callback as *const ()))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_USERAGENT, "smashnet\0".as_ptr()))?;
-            println!("beginning download.");
-            match curle!(easy_perform(curl)){
-                Ok(()) => println!("curl success?"),
-                Err(e) => println!("Error during curl: {}", e) 
-            };
-        }
-    
-        println!("flushing writer");
-        writer.flush();
-        println!("dropping writer");
-        std::mem::drop(writer);
-    
-    
-        // replace/rename the temp file to the expected location
-        if Path::new(location.as_str()).exists() {
-            println!("removing original path: {}", location);
-            std::fs::remove_file(location.as_str());
-        }
-        std::fs::rename(&temp_file, location);
-    
-        //println!("resetting priority of thread");
-        //unsafe {
-        //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 16);
-        //}
-        println!("download complete.");
-        Ok(())
+}
+
+fn download_common(&mut Curler, url: String, location: String, accept: String) -> Result<(), u32> {
+    // change thread to high priority
+    //unsafe {
+    //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
+    //}
+
+    // temp file name: myfile.txt.dl
+    let temp_file = [location.as_str(), ".dl"].concat();
+    if Path::new(temp_file.as_str()).exists() {
+        println!("removing existing temp file: {}", temp_file);
+        std::fs::remove_file(&temp_file);
     }
+
+    println!("creating temp file: {}", temp_file);
+    let mut writer = std::io::BufWriter::with_capacity(
+        0x40_0000,
+        std::fs::File::create(&temp_file).unwrap()
+    );
+    println!("created bufwriter with capacity");
+    unsafe {
+        let cstr = [url.as_str(), "\0"].concat();
+        let ptr = cstr.as_str().as_ptr();
+        let curl = self.curl as *mut CURL;
+        println!("curl is initialized, beginning options");
+        let header_text = format!("Accept: application/{}\0", accept).as_ptr();
+        let header = slist_append(std::ptr::null_mut(), header_text);
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_URL, ptr))?;
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_HTTPHEADER, header))?;
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_FOLLOWLOCATION, 1u64))?;
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEDATA, &mut writer))?;
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
+    
+        match self.callback {
+            Some(function) => {
+                curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 0u64))?;
+                curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSDATA, function as *const ()))?;
+                curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSFUNCTION, callback_internal as *const ()))?;
+            },
+            None => curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 1u64))?,
+        }
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_NOSIGNAL, 1u64))?;
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_SSL_CTX_FUNCTION, curl_ssl_ctx_callback as *const ()))?;
+        curle!(easy_setopt(curl, curl_sys::CURLOPT_USERAGENT, "smashnet\0".as_ptr()))?;
+        println!("beginning download.");
+        match curle!(easy_perform(curl)){
+            Ok(()) => println!("curl success?"),
+            Err(e) => println!("Error during curl: {}", e) 
+        };
+    }
+
+    println!("flushing writer");
+    writer.flush();
+    println!("dropping writer");
+    std::mem::drop(writer);
+
+
+    // replace/rename the temp file to the expected location
+    if Path::new(location.as_str()).exists() {
+        println!("removing original path: {}", location);
+        std::fs::remove_file(location.as_str());
+    }
+    std::fs::rename(&temp_file, location);
+
+    //println!("resetting priority of thread");
+    //unsafe {
+    //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 16);
+    //}
+    println!("download complete.");
+    Ok(())
 }
 
 impl Drop for Curler {
