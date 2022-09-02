@@ -71,6 +71,9 @@ pub fn main() {
     }
     skyline_web::DialogOk::ok("Prepare to google!");
     println!("google!");
-    request::get("https://www.google.com".to_string());
+    match request::get("https://www.google.com".to_string()) {
+        Ok(str) => println!("data: {}" , str),
+        Err(e) => println!("error: {}", e)
+    }
     println!("end google.");
 }
