@@ -5,6 +5,6 @@ pub extern "Rust" fn get(url: String) -> Result<String, String> {
         .with_header("UserAgent", "smashnet.nro")
         .send() {
             Ok(response) => Ok(format!("{}", response.as_str())),
-            Err(e) => Err(format!("Error: {}", e))
+            Err(e) => Err(format!("Error: {:?}", e))
         }
 }
