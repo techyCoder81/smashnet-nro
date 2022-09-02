@@ -4,7 +4,7 @@ pub extern "Rust" fn get(url: String) -> Result<String, String> {
     return match minreq::get(url.clone())
         .with_header("UserAgent", "smashnet.nro")
         .send() {
-            Ok(response) => Ok(response.to_owned()),
+            Ok(response) => Ok(format!("{}", response.as_str())),
             Err(e) => Err(format!("Error: {}", e))
         }
 }
