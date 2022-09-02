@@ -1,6 +1,6 @@
 
 #[export_name = "Smashnet__get"]
-extern "Rust" fn get(url: String) -> Result<String, String> {
+pub extern "Rust" fn get(url: String) -> Result<String, String> {
     return match minreq::get(url.clone())
         .with_header("UserAgent", "smashnet.nro")
         .send() {
