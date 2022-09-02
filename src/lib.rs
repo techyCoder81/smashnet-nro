@@ -61,6 +61,7 @@ pub fn main() {
                     Ok(()) => println!("smashnet updated successfully!"),
                     Err(e) => println!("Smashnet update failed! Error: {}", e)
                 }
+            println!("Restarting smash...");
             unsafe { skyline::nn::oe::RequestToRelaunchApplication(); }    
             } else {
                 println!("not updating smashnet!");
@@ -68,6 +69,7 @@ pub fn main() {
     } else {
         println!("smashnet is up to date!");
     }
+    skyline_web::DialogOk::ok("Prepare to google!");
     println!("google!");
     request::get("https://www.google.com".to_string());
     println!("end google.");
