@@ -6,8 +6,6 @@ use std::error::Error;
 use std::path::Path;
 use smashnet::HttpCurl;
 
-//use crate::DownloadInfo;
-
 #[skyline::hook(offset = 0x6aa8, inline)]
 pub unsafe fn curl_log_hook(ctx: &skyline::hooks::InlineCtx) {
     let str_ptr;
@@ -124,18 +122,68 @@ impl HttpCurl for Curler {
     /// download a file from the given url to the given location
     #[export_name = "HttpCurl__download"]
     extern "Rust" fn download(&mut self, url: String, location: String) -> Result<(), u32>{
+        self.download_common(url, location, "application/octet-stream".to_string())
+    }
+
+    /// GET json from the given url
+    #[export_name = "HttpCurl__get_json"]
+    extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
+        let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
+        let location = format!("sd:/downloads/{}.json", tick);
+        match self.download_common(url, location, "application/json".to_string()) {
+            Ok(()) => println!("json GET ok!"),
+            Err(e) => {println!("json GET error: {}", e);return Err(e);}
+        }
+        let json = match std::fs::read_to_string(location){
+            Ok(text) => text,
+            Err(e) => {
+                let error = format!("{}", e);
+                return Err(error);
+            }
+        };
+        std::fs::remove_file(location);
+        return Ok(json);
+    }
+
+    /// GET text from the given url
+    #[export_name = "HttpCurl__get"]
+    extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
+        let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
+        let location = format!("sd:/downloads/{}.txt", tick);
+        match self.download_common(url, location, "text/plain".to_string()) {
+            Ok(()) => println!("text GET ok!"),
+            Err(e) => {println!("text GET error: {}", e);return Err(e);}
+        }
+        let str = match std::fs::read_to_string(location){
+            Ok(text) => text,
+            Err(e) => {
+                let error = format!("{}", e);
+                return Err(error);
+            }
+        };
+        std::fs::remove_file(location);
+        return Ok(str);
+    }
+
+    #[export_name = "HttpCurl__progress_callback"]
+    extern "Rust" fn progress_callback(&mut self, function: fn(f64, f64) -> ()) -> &mut Self {
+        self.callback = Some(function);
+        self
+    }
+
+    fn download_common(&mut self, url: String, location: String, accept: String) -> Result<(), u32> {
         // change thread to high priority
         //unsafe {
         //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
         //}
-
+    
         // temp file name: myfile.txt.dl
         let temp_file = [location.as_str(), ".dl"].concat();
         if Path::new(temp_file.as_str()).exists() {
             println!("removing existing temp file: {}", temp_file);
             std::fs::remove_file(&temp_file);
         }
-
+    
         println!("creating temp file: {}", temp_file);
         let mut writer = std::io::BufWriter::with_capacity(
             0x40_0000,
@@ -147,13 +195,14 @@ impl HttpCurl for Curler {
             let ptr = cstr.as_str().as_ptr();
             let curl = self.curl as *mut CURL;
             println!("curl is initialized, beginning options");
-            let header = slist_append(std::ptr::null_mut(), "Accept: application/octet-stream\0".as_ptr());
+            let header_text = format!("Accept: application/{}\0", accept).as_ptr();
+            let header = slist_append(std::ptr::null_mut(), header_text);
             curle!(easy_setopt(curl, curl_sys::CURLOPT_URL, ptr))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_HTTPHEADER, header))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_FOLLOWLOCATION, 1u64))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEDATA, &mut writer))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
-       
+        
             match self.callback {
                 Some(function) => {
                     curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 0u64))?;
@@ -171,31 +220,26 @@ impl HttpCurl for Curler {
                 Err(e) => println!("Error during curl: {}", e) 
             };
         }
-
+    
         println!("flushing writer");
         writer.flush();
         println!("dropping writer");
         std::mem::drop(writer);
-
-
+    
+    
         // replace/rename the temp file to the expected location
         if Path::new(location.as_str()).exists() {
             println!("removing original path: {}", location);
             std::fs::remove_file(location.as_str());
         }
         std::fs::rename(&temp_file, location);
-
+    
         //println!("resetting priority of thread");
         //unsafe {
         //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 16);
         //}
         println!("download complete.");
         Ok(())
-    }
-    #[export_name = "HttpCurl__progress_callback"]
-    extern "Rust" fn progress_callback(&mut self, function: fn(f64, f64) -> ()) -> &mut Self {
-        self.callback = Some(function);
-        self
     }
 }
 
@@ -214,7 +258,6 @@ impl Drop for Curler {
         }
     }
 }
-
 
 static mut INSTALLED: bool = false;
 

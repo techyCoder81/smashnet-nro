@@ -68,10 +68,8 @@ pub fn main() {
         println!("smashnet is up to date!");
     }
 
-    match Curler::new().download(
-        "https://api.github.com/repos/HDR-Development/HDR-Nightlies/releases?per_page=10".to_string(), 
-        "sd:/downloads/test.txt".to_string()) {
-            Ok(()) => println!("get succeeded!"),
+    match Curler::new().get_json("https://api.github.com/repos/HDR-Development/HDR-Nightlies/releases?per_page=10".to_string()) {
+            Ok(str) => println!("get succeeded: {}", str),
             Err(e) => println!("https GET failed! Error: {}", e)
         }
 }
