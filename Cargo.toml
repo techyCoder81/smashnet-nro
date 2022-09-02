@@ -17,7 +17,7 @@ smashnet = { git = "https://github.com/techyCoder81/smashnet.git", features = ["
 curl-sys = { git = "https://github.com/techyCoder81/curl-rust.git", branch = "main" }
 skyline-web = { git = "https://github.com/skyline-rs/skyline-web", features = ["json"] }
 md5 = "0.7.0"
-minreq = { version = "=2.2.1", features = ["https"] }
+minreq = { version = "2.6", features = ["https"] }
 
 
 [profile.dev]
