@@ -174,7 +174,7 @@ impl HttpCurl for Curler {
     
 }
 
-fn download_common(&mut Curler, url: String, location: String, accept: String) -> Result<(), u32> {
+fn download_common(curler: &mut Curler, url: String, location: String, accept: String) -> Result<(), u32> {
     // change thread to high priority
     //unsafe {
     //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
@@ -196,7 +196,7 @@ fn download_common(&mut Curler, url: String, location: String, accept: String) -
     unsafe {
         let cstr = [url.as_str(), "\0"].concat();
         let ptr = cstr.as_str().as_ptr();
-        let curl = self.curl as *mut CURL;
+        let curl = curler.curl as *mut CURL;
         println!("curl is initialized, beginning options");
         let header_text = format!("Accept: application/{}\0", accept).as_ptr();
         let header = slist_append(std::ptr::null_mut(), header_text);
