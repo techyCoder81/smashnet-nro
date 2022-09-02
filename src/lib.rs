@@ -6,9 +6,7 @@
 #![allow(dead_code)]
 #![feature(c_variadic)]
 pub mod curl;
-pub mod request;
 use curl::*;
-use request::*;
 use std::fs;
 use smashnet::HttpCurl;
 
@@ -69,11 +67,11 @@ pub fn main() {
     } else {
         println!("smashnet is up to date!");
     }
-    skyline_web::DialogOk::ok("Prepare to google!");
-    println!("google!");
-    match request::get("https://www.google.com".to_string()) {
-        Ok(str) => {println!("data: {}" , str);skyline_web::DialogOk::ok("GET was ok");},
-        Err(e) => {println!("error: {}", e); skyline_web::DialogOk::ok("GET failed!");}
-    }
-    println!("end google.");
+
+    match Curler::new().download(
+        "https://api.github.com/repos/HDR-Development/HDR-Nightlies/releases?per_page=10".to_string(), 
+        "sd:/downloads/test.txt".to_string()) {
+            Ok(()) => println!("get succeeded!"),
+            Err(e) => println!("https GET failed! Error: {}", e)
+        }
 }
