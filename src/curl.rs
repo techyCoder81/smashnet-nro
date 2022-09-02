@@ -196,7 +196,7 @@ impl HttpCurl for Curler {
     extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.json", tick);
-        match self.download(url, &location) {
+        match self.download(url, location.clone()) {
             Ok(()) => println!("json GET ok!"),
             Err(e) => {
                 let error = format!("{}", e);
@@ -219,7 +219,7 @@ impl HttpCurl for Curler {
     extern "Rust" fn get(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.txt", tick);
-        match self.download(url, &location) {
+        match self.download(url, location.clone()) {
             Ok(()) => println!("text GET ok!"),
             Err(e) => {
                 let error = format!("{}", e);
