@@ -175,6 +175,12 @@ impl HttpCurl for Curler {
         println!("dropping writer");
         std::mem::drop(writer);
 
+        if std::fs::metadata(location.as_str()).unwrap().len() < 8 {
+            // empty files should be considered an error.
+            println!("File was empty, assuming failure.");
+            std::fs::remove_file(&temp_file);
+            return Err(0);
+        }
 
         // replace/rename the temp file to the expected location
         if Path::new(location.as_str()).exists() {
