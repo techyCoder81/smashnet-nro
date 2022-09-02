@@ -5,8 +5,8 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #![feature(c_variadic)]
-mod curl;
-mod request;
+pub mod curl;
+pub mod request;
 use curl::*;
 use request::*;
 use std::fs;
@@ -68,4 +68,7 @@ pub fn main() {
     } else {
         println!("smashnet is up to date!");
     }
+    println!("google!");
+    request::get("https://www.google.com".to_string());
+    println!("end google.");
 }
