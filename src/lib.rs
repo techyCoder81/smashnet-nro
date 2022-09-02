@@ -55,9 +55,13 @@ pub fn main() {
         let should_update = skyline_web::Dialog::yes_no("An update is available for smashnet.nro! Would you like to update?");
         if should_update {
             println!("updating smashnet!");
-            Curler::new().download(
+            match Curler::new().download(
                 "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro".to_string(), 
-                "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro".to_string());
+                "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro".to_string()) {
+                    Ok(()) => println!("smashnet updated successfully!"),
+                    Err(e) => println!("Smashnet update failed! Error: {}", e)
+                }
+            unsafe { skyline::nn::oe::RequestToRelaunchApplication(); }    
             } else {
                 println!("not updating smashnet!");
             }
