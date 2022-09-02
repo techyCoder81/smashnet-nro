@@ -122,7 +122,7 @@ impl HttpCurl for Curler {
     /// download a file from the given url to the given location
     #[export_name = "HttpCurl__download"]
     extern "Rust" fn download(&mut self, url: String, location: String) -> Result<(), u32>{
-        download_common(self, url, location, "application/octet-stream".to_string())
+        download_common(self, url, &location, "application/octet-stream".to_string())
     }
 
     /// GET json from the given url
@@ -130,7 +130,7 @@ impl HttpCurl for Curler {
     extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.json", tick);
-        match download_common(self, url, location, "application/json".to_string()) {
+        match download_common(self, url, &location, "application/json".to_string()) {
             Ok(()) => println!("json GET ok!"),
             Err(e) => {
                 let error = format!("{}", e);
@@ -153,7 +153,7 @@ impl HttpCurl for Curler {
     extern "Rust" fn get(&mut self, url: String) -> Result<String, String>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.txt", tick);
-        match download_common(self, url, location, "text/plain".to_string()) {
+        match download_common(self, url, &location, "text/plain".to_string()) {
             Ok(()) => println!("text GET ok!"),
             Err(e) => {
                 let error = format!("{}", e);
@@ -180,7 +180,7 @@ impl HttpCurl for Curler {
     
 }
 
-fn download_common(curler: &mut Curler, url: String, location: String, accept: String) -> Result<(), u32> {
+fn download_common(curler: &mut Curler, url: String, location: &String, accept: String) -> Result<(), u32> {
     // change thread to high priority
     //unsafe {
     //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
