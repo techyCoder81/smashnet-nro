@@ -6,7 +6,9 @@
 #![allow(dead_code)]
 #![feature(c_variadic)]
 mod curl;
+mod request;
 use curl::*;
+use request::*;
 use std::fs;
 use smashnet::HttpCurl;
 
