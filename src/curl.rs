@@ -137,14 +137,14 @@ impl HttpCurl for Curler {
                 return Err(error);
             }
         }
-        let json = match std::fs::read_to_string(location){
+        let json = match std::fs::read_to_string(&location){
             Ok(text) => text,
             Err(e) => {
                 let error = format!("{}", e);
                 return Err(error);
             }
         };
-        std::fs::remove_file(location);
+        std::fs::remove_file(&location);
         return Ok(json);
     }
 
@@ -160,14 +160,14 @@ impl HttpCurl for Curler {
                 return Err(error);
             }
         }
-        let str = match std::fs::read_to_string(location){
+        let str = match std::fs::read_to_string(&location){
             Ok(text) => text,
             Err(e) => {
                 let error = format!("{}", e);
                 return Err(error);
             }
         };
-        std::fs::remove_file(location);
+        std::fs::remove_file(&location);
         return Ok(str);
     }
 
