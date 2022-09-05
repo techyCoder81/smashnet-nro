@@ -56,8 +56,8 @@ pub fn main() {
             match Curler::new().download(
                 "https://github.com/techyCoder81/smashnet-nro/releases/download/nightly/libsmashnet.nro".to_string(), 
                 "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro".to_string()) {
-                    Ok(()) => println!("smashnet updated successfully!"),
-                    Err(e) => println!("Smashnet update failed! Error: {}", e)
+                    Ok(()) => skyline_web::Dialog::ok("Smashnet Updated successfully!"),
+                    Err(e) => skyline_web::Dialog::ok(format!("Smashnet update failed! Error: {}", e))
                 }
             println!("Restarting smash...");
             unsafe { skyline::nn::oe::RequestToRelaunchApplication(); }    
