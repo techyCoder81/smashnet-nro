@@ -34,7 +34,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         artifacts-branch: ${{ github.event.pull_request.head.name }}
         artifacts: |
-          'target/aarch64-skyline-switch/release/libsmashnet.nro'
+          target/aarch64-skyline-switch/release/libsmashnet.nro
           checksum.txt
 
 
