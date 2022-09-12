@@ -1,0 +1,40 @@
+name: pr_build
+on: 
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  plugin_build:
+    env:
+      PLUGIN_NAME: smashnet
+    runs-on: ubuntu-latest
+    container: 
+      image: jugeeya/cargo-skyline:3.0.0-dkp-beta
+    steps:
+    - name: checkout version
+      uses: actions/checkout@v2
+
+
+    # build the project
+    - run: |
+        export PATH="$PATH:/root/.cargo/bin:/opt/devkitpro/devkitA64/bin" \
+        && cargo skyline build --release
+      env:
+        HOME: /root
+
+    - run: |
+        md5sum target/aarch64-skyline-switch/release/libsmashnet.nro > checksum.txt
+
+    - name: Pull request artifacts
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: gavv/pull-request-artifacts@v1.0.0
+      with:
+        commit: ${{ github.event.pull_request.head.sha }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        artifacts-branch: ${{ github.event.pull_request.head.name }}
+        artifacts: |
+          'target/aarch64-skyline-switch/release/libsmashnet.nro'
+          checksum.txt
+
+
