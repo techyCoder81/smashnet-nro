@@ -58,7 +58,7 @@ pub fn main() {
                 "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/libsmashnet.nro".to_string()) {
                     Ok(()) => skyline_web::DialogOk::ok("Smashnet Updated successfully!"),
                     Err(e) => skyline_web::DialogOk::ok(format!("Smashnet update failed! Error: {}", e))
-                }
+                };
             println!("Restarting smash...");
             unsafe { skyline::nn::oe::RequestToRelaunchApplication(); }    
             } else {
