@@ -1,0 +1,1 @@
+bcd0906466e5c7afa6926b62d0bea308  target/aarch64-skyline-switch/release/libsmashnet.nro
