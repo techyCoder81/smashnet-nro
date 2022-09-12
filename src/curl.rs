@@ -151,6 +151,7 @@ impl HttpCurl for Curler {
             curle!(easy_setopt(curl, curl_sys::CURLOPT_FOLLOWLOCATION, 1u64))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEDATA, &mut writer))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
+            curle!(easy_setopt(curl, curl_sys::CURLOPT_FAILONERROR, 1u64);
        
             match self.callback {
                 Some(function) => {
@@ -275,7 +276,7 @@ pub fn install_curl() {
         if !INSTALLED {
             INSTALLED = true;
             skyline::install_hooks!(
-                curl_log_hook,
+                //curl_log_hook,
                 libcurl_resolver_thread_stack_size_set,
                 libcurl_resolver_thread_stack_size_set2
             );
