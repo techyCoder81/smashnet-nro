@@ -4,15 +4,11 @@ use std::arch::asm;
 use curl_sys::CURL;
 use std::error::Error;
 use std::path::Path;
-use smashnet::HttpCurl;
+use smashnet::types::{HttpCurlError, CurlerString};
 
-#[skyline::hook(offset = 0x6aa8, inline)]
-pub unsafe fn curl_log_hook(ctx: &skyline::hooks::InlineCtx) {
-    let str_ptr;
-    asm!("ldr {}, [x29, #0x18]", out(reg) str_ptr);
-    println!("{}", skyline::from_c_str(str_ptr));
-}
-
+// The following two hooks are used to manipulate the stack size of the cURL resolver thread.
+// Without these hooks, the resolver thread's stack size will not be larger enough to resolve
+// the URLs that we provide. We are unsure why.
 #[skyline::hook(offset = 0x27ac0, inline)]
 pub unsafe fn libcurl_resolver_thread_stack_size_set(ctx: &mut skyline::hooks::InlineCtx) {
     *ctx.registers[1].x.as_mut() = 0x10_000;
@@ -75,10 +71,10 @@ unsafe extern "C" fn write_fn(data: *const u8, data_size: usize, data_count: usi
 }
 
 /// private internal callback handler
-unsafe extern "C" fn callback_internal(callback: extern fn(f64, f64) -> (), dl_total: f64, dl_now: f64, ul_total: f64, ul_now: f64) -> usize {
+unsafe extern "C" fn progress_callback_internal(callback: *mut ProgressCallback, dl_total: f64, dl_now: f64, ul_total: f64, ul_now: f64) -> usize {
     //println!("callback is called: {:p}", callback);
     if dl_total != 0.0 {
-        callback(dl_total, dl_now);
+        ((*callback).callback)((*callback).data, dl_total, dl_now);
     }
     0
 }
@@ -96,40 +92,90 @@ macro_rules! curle {
 
 /// this MUST align withe HttpCurl defined in the smashnet main package!
 pub struct Curler {
-    pub callback: Option<fn(f64, f64) -> ()>,
+    progress_callback: Option<ProgressCallback>,
     pub curl: u64,
 }
 
-impl HttpCurl for Curler {
+#[derive(Copy, Clone)]
+struct ProgressCallback {
+    callback: extern "C" fn(*mut u8, f64, f64),
+    data: *mut u8,
+}
 
-    #[export_name = "HttpCurl__new"]
-    extern "Rust" fn new() -> Self { 
+// The following is the C API for using smashnet
+#[export_name = "HttpCurl__new"]
+pub extern "C" fn httpcurl_new(this: *mut *mut Curler) -> HttpCurlError {
+    match Curler::new() {
+        Ok(curler) => unsafe {
+            *this = Box::leak(Box::new(curler)) as *mut Curler;
+            HttpCurlError::Ok
+        },
+        Err(err) => err,
+    }
+}
+
+#[export_name = "HttpCurl__download"]
+pub extern "C" fn httpcurl_download(this: *const Curler, url: *const u8, url_len: usize, location: *const u8, location_len: usize) -> HttpCurlError {
+    unsafe {
+        let url = std::str::from_utf8_unchecked(std::slice::from_raw_parts(url, url_len));
+        let location = std::str::from_utf8_unchecked(std::slice::from_raw_parts(location, location_len));
+        match (*this).download(url, location) {
+            Ok(_) => HttpCurlError::Ok,
+            Err(e) => e,
+        }
+    }
+}
+
+#[export_name = "HttpCurl__get"]
+pub extern "C" fn httpcurl_get(this: *const Curler, url: *const u8, url_len: usize, out: *mut CurlerString) -> HttpCurlError {
+    unsafe {
+        let url = std::str::from_utf8_unchecked(std::slice::from_raw_parts(url, url_len));
+        match (*this).get(url) {
+            Ok(string) => {
+                let (ptr, len, cap) = string.into_raw_parts();
+                std::ptr::write(out, CurlerString {
+                    raw: ptr,
+                    len,
+                    capacity: cap
+                });
+                HttpCurlError::Ok
+            },
+            Err(e) => e
+        }
+    }
+}
+
+#[export_name = "HttpCurl__progress_callback"]
+pub extern "C" fn httpcurl_progress_callback(this: *mut Curler, callback: extern "C" fn(*mut u8, f64, f64), data: *mut u8) -> HttpCurlError {
+    unsafe {
+        (*this).progress_callback(ProgressCallback {
+            callback,
+            data
+        });
+    }
+    HttpCurlError::Ok
+}
+
+impl Curler {
+    pub fn new() -> Result<Self, HttpCurlError> {
         install_curl();
         let curl_handle = unsafe { easy_init() };
-        return Curler{callback: None, curl: curl_handle as u64};
-    }
-    #[export_name = "HttpCurl__is_valid"]
-    extern "Rust" fn is_valid(&mut self) -> Result<&mut Curler, u64> {
-        let curl = self.curl as *mut CURL;
-        if curl.is_null() {
-            let error = format!("curl failed to initialize! Pointer value: {:p}", curl);
-            println!("{}", error);
-            return Err(self.curl);
+        if !curl_handle.is_null() {
+            Ok(Curler {
+                progress_callback: None,
+                curl: curl_handle as u64
+            })
+        } else {
+            None
         }
-        return Ok(self);
     }
 
     /// download a file from the given url to the given location
-    #[export_name = "HttpCurl__download"]
-    extern "Rust" fn download(&mut self, url: String, location: String) -> Result<(), u32>{
-        // change thread to high priority
-        //unsafe {
-        //    skyline::nn::os::ChangeThreadPriority(skyline::nn::os::GetCurrentThread(), 2);
-        //}
-
-        // temp file name: myfile.txt.dl
-        let temp_file = [location.as_str(), ".dl"].concat();
-        if Path::new(temp_file.as_str()).exists() {
+    pub fn download<A: AsRef<str>, B: AsRef<str>>(&self, url: A, location: B) -> Result<(), HttpCurlError> {
+        let url = url.as_ref();
+        let location = location.as_ref();
+        let temp_file = [location, ".dl"].concat();
+        if Path::new(&temp_file).exists() {
             println!("removing existing temp file: {}", temp_file);
             std::fs::remove_file(&temp_file);
         }
@@ -141,7 +187,7 @@ impl HttpCurl for Curler {
         );
         println!("created bufwriter with capacity");
         unsafe {
-            let cstr = [url.as_str(), "\0"].concat();
+            let cstr = [url, "\0"].concat();
             let ptr = cstr.as_str().as_ptr();
             let curl = self.curl as *mut CURL;
             println!("curl is initialized, beginning options");
@@ -153,22 +199,43 @@ impl HttpCurl for Curler {
             curle!(easy_setopt(curl, curl_sys::CURLOPT_WRITEFUNCTION, write_fn as *const ()))?;
             curle!(easy_setopt(curl, curl_sys::CURLOPT_FAILONERROR, 1u64))?;
        
-            match self.callback {
-                Some(function) => {
-                    curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 0u64))?;
-                    curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSDATA, function as *const ()))?;
-                    curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSFUNCTION, callback_internal as *const ()))?;
+            let callback = match self.progress_callback {
+                Some(callback) => {
+                    let callback = Box::new(callback);
+                    let callback = Box::leak(callback);
+                    let result = curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 0u64))
+                        .and_then(|_| curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSDATA, callback as *mut ProgressCallback)))
+                        .and_then(|_| curle!(easy_setopt(curl, curl_sys::CURLOPT_PROGRESSFUNCTION, progress_callback_internal as *const ())));
+                    if let Err(e) = result {
+                        drop(Box::from_raw(callback));
+                        return Err(e);
+                    }
+                    callback as *mut ProgressCallback
                 },
-                None => curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 1u64))?,
+                None => {
+                    curle!(easy_setopt(curl, curl_sys::CURLOPT_NOPROGRESS, 1u64))?;
+                    std::ptr::null_mut()
+                },
+            };
+
+            let result = curle!(easy_setopt(curl, curl_sys::CURLOPT_NOSIGNAL, 1u64))
+                .and_then(|_| curle!(easy_setopt(curl, curl_sys::CURLOPT_SSL_CTX_FUNCTION, curl_ssl_ctx_callback as *const ())))
+                .and_then(|_| curle!(easy_setopt(curl, curl_sys::CURLOPT_USERAGENT, "smashnet\0".as_ptr())));
+            
+            if let Err(e) = result {
+                if !callback.is_null() {
+                    drop(Box::from_raw(callback));
+                }
+                return Err(e);
             }
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_NOSIGNAL, 1u64))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_SSL_CTX_FUNCTION, curl_ssl_ctx_callback as *const ()))?;
-            curle!(easy_setopt(curl, curl_sys::CURLOPT_USERAGENT, "smashnet\0".as_ptr()))?;
+
             println!("beginning download.");
             match curle!(easy_perform(curl)){
                 Ok(()) => println!("curl success?"),
                 Err(e) => println!("Error during curl: {}", e) 
             };
+
+            drop(Box::from_raw(callback));
         }
 
         println!("flushing writer");
@@ -198,35 +265,11 @@ impl HttpCurl for Curler {
         Ok(())
     }
 
-    /// GET json from the given url
-    #[export_name = "HttpCurl__get_json"]
-    extern "Rust" fn get_json(&mut self, url: String) -> Result<String, String>{
-        let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
-        let location = format!("sd:/downloads/{}.json", tick);
-        match self.download(url, location.clone()) {
-            Ok(()) => println!("json GET ok!"),
-            Err(e) => {
-                let error = format!("{}", e);
-                return Err(error);
-            }
-        }
-        let json = match std::fs::read_to_string(&location){
-            Ok(text) => text,
-            Err(e) => {
-                let error = format!("{}", e);
-                return Err(error);
-            }
-        };
-        std::fs::remove_file(&location);
-        return Ok(json);
-    }
-
     /// GET text from the given url
-    #[export_name = "HttpCurl__get"]
-    extern "Rust" fn get(&mut self, url: String) -> Result<String, String>{
+    pub fn get<S: AsRef<str>>(&mut self, url: S) -> Result<String, HttpCurlError>{
         let tick = unsafe {skyline::nn::os::GetSystemTick() as usize};
         let location = format!("sd:/downloads/{}.txt", tick);
-        match self.download(url, location.clone()) {
+        match self.download(url, &location) {
             Ok(()) => println!("text GET ok!"),
             Err(e) => {
                 let error = format!("{}", e);
@@ -244,18 +287,15 @@ impl HttpCurl for Curler {
         return Ok(str);
     }
 
-    #[export_name = "HttpCurl__progress_callback"]
-    extern "Rust" fn progress_callback(&mut self, function: fn(f64, f64) -> ()) -> &mut Self {
-        self.callback = Some(function);
+    pub fn progress_callback(&mut self, callback: ProgressCallback) -> &mut Self {
+        self.progress_callback = Some(callback);
         self
     }
-
-    
 }
 
 impl Drop for Curler {
     #[export_name = "Curler__drop"]
-    extern "Rust" fn drop(&mut self) {
+    extern "C" fn drop(&mut self) {
         let curl = self.curl as *mut CURL;
         if !curl.is_null() {
             println!("cleaning up curl handle from curler.");
@@ -266,20 +306,24 @@ impl Drop for Curler {
                 }; 
             }
         }
+        if let Some(callback) = self.progress_callback.take() {
+            let closure = callback.data as *mut Box<dyn FnMut(f64, f64) + 'static>;
+            unsafe {
+                drop(Box::from_raw(closure))
+            }
+        }
     }
 }
 
-static mut INSTALLED: bool = false;
+// Used to only install the stack size hooks once
+static INSTALL: std::sync::Once = std::sync::Once::new();
 
+/// Installs the required hooks for cURL
 pub fn install_curl() {
-    unsafe {
-        if !INSTALLED {
-            INSTALLED = true;
-            skyline::install_hooks!(
-                //curl_log_hook,
-                libcurl_resolver_thread_stack_size_set,
-                libcurl_resolver_thread_stack_size_set2
-            );
-        }
-    }
+    INSTALL.call_once(|| {
+        skyline::install_hooks!(
+            libcurl_resolver_thread_stack_size_set,
+            libcurl_resolver_thread_stack_size_set2
+        );
+    });
 }
