@@ -13,8 +13,8 @@ name = "smashnet"
 
 [dependencies]
 skyline = { git = "https://github.com/ultimate-research/skyline-rs.git" }
-# smashnet = { git = "https://github.com/techyCoder81/smashnet.git", features = ["nro"] }
-smashnet = { path = "../smashnet", features = ["nro"] }
+smashnet = { git = "https://github.com/blu-dev/smashnet.git", features = ["nro"] }
+# smashnet = { path = "../smashnet", features = ["nro"] }
 curl-sys = { git = "https://github.com/techyCoder81/curl-rust.git", branch = "main" }
 skyline-web = { git = "https://github.com/skyline-rs/skyline-web", features = ["json"] }
 md5 = "0.7.0"
